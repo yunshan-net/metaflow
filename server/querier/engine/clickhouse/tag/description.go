@@ -1046,6 +1046,47 @@ func GetDynamicTagDescriptions(db, table, rawSql, queryCacheTTL, orgID string, u
 	return
 }
 
+// Get dynamic metric
+func GetDynamicMetric(db, table, metric string) (response *common.Result) {
+	response = &common.Result{
+		Columns: []interface{}{
+			"name", "client_name", "server_name", "display_name", "display_name_zh", "display_name_en", "type", "category",
+			"operators", "permissions", "description", "description_zh", "description_en", "related_tag", "deprecated", "not_supported_operators", "table",
+		},
+		Values: []interface{}{},
+	}
+	notSupportOperator := []string{}
+	if table == "alert_event" {
+		notSupportOperator = []string{"select", "group"}
+	}
+
+	for preffix, _ := range common.TRANS_MAP_ITEM_TAG {
+		if strings.HasPrefix(metric, preffix) {
+			response.Values = append(response.Values, []interface{}{
+				metric, metric, metric, metric, metric, metric, "map_item",
+				"Custom Tag", tagTypeToOperators["string"], []bool{true, true, true}, "", "", "", "", false, notSupportOperator, "",
+			})
+			return
+		}
+	}
+
+	if strings.HasPrefix(metric, "tag.") || strings.HasPrefix(metric, "attribute.") {
+		response.Values = append(response.Values, []interface{}{
+			metric, metric, metric, metric, metric, metric, "map_item",
+			"Native Tag", tagTypeToOperators["string"], []bool{true, true, true}, "", "", "", "", false, notSupportOperator, "",
+		})
+		return
+	}
+
+	if table == "alert_event" {
+		response.Values = append(response.Values, []interface{}{
+			metric, metric, metric, metric, metric, metric, "string",
+			"string", tagTypeToOperators["string"], []bool{true, true, true}, "", "", "", "", false, notSupportOperator, "",
+		})
+	}
+	return
+}
+
 func GetAlertEventTagDescriptions(staticTag, dynamicTag *common.Result) (response *common.Result, err error) {
 	response = &common.Result{
 		Columns: []interface{}{

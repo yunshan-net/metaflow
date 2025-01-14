@@ -298,6 +298,7 @@ func GetMetrics(field, db, table, orgID string, dynamicTag *common.Result) (*Met
 			}
 		}
 		// Dynamic tag metrics
+		dynamicTag := tag.GetDynamicMetric(db, table, field)
 		GetTagTypeMetrics(dynamicTag, newAllMetrics, db, table, orgID)
 		metric, ok := newAllMetrics[field]
 		return metric, ok
