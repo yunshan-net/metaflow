@@ -4,5 +4,129 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0"
+async-trait = "0.1.80"
+derivative = "2.2.0"
+futures = "~0.3"
+log = "0.4"
+openssl-probe = { version = "0.1.5", default-features = false }
+serde = "1.0.200"
+serde_with = "3.8.1"
 serde_yaml = "0.9"
-tokio = { version = "1.20.1", features = ["full"] }
+tokio = { version = "1.37.0", features = ["full"] }
+tokio-stream = { version = "0.1.15", default-features = false }
+typetag = "0.2.16"
+inventory = "0.3.15"
+vector-config = { git = "https://gitee.com/deepflowio/vector.git", tag = "v0.43.1", default-features = false }
+vector-lib = { git = "https://gitee.com/deepflowio/vector.git", tag = "v0.43.1", default-features = false }
+
+[target.'cfg(target_env = "gnu")'.dependencies]
+vector = { git = "https://gitee.com/deepflowio/vector", tag = "v0.43.1", default-features = false, features = [
+    "enrichment-tables",
+    "sources",
+    "sources-dnstap",
+    "transforms",
+    # build required sinks
+    "sinks-blackhole",
+    "sinks-console",
+    "sinks-prometheus",
+    "sinks-file",
+    "sinks-http",
+    "sinks-opentelemetry",
+    "sinks-vector",
+    "unix",
+    "secrets",
+] }
+
+# diff with `gnu`: remove sources-rdkafka, unix features
+[target.'cfg(target_env = "musl")'.dependencies]
+vector = { git = "https://gitee.com/deepflowio/vector", tag = "v0.43.1", default-features = false, features = [
+    "enrichment-tables",
+    "sources-dnstap",
+    "transforms",
+    # build required sinks
+    "sinks-blackhole",
+    "sinks-console",
+    "sinks-prometheus",
+    "sinks-file",
+    "sinks-http",
+    "sinks-opentelemetry",
+    "sinks-vector",
+    "allocation-tracing",
+    "secrets",
+    "sources-amqp",
+    "sources-aws_kinesis_firehose",
+    "sources-aws_s3",
+    "sources-aws_sqs",
+    "sources-datadog_agent",
+    "sources-demo_logs",
+    "sources-docker_logs",
+    "sources-exec",
+    "sources-file",
+    "sources-fluent",
+    "sources-gcp_pubsub",
+    "sources-heroku_logs",
+    "sources-http_server",
+    "sources-http_client",
+    "sources-internal_logs",
+    "sources-journald",
+    "sources-kubernetes_logs",
+    "sources-logstash",
+    "sources-nats",
+    "sources-opentelemetry",
+    "sources-pulsar",
+    "sources-file_descriptor",
+    "sources-redis",
+    "sources-socket",
+    "sources-splunk_hec",
+    "sources-stdin",
+    "sources-syslog",
+    "sources-vector",
+    "sources-metrics",
+] }
+
+
+# diff with `gnu`: remove sources-rdkafka/sources-dnstap/unix features
+[target.'cfg(target_os = "windows")'.dependencies]
+vector = { git = "https://gitee.com/deepflowio/vector", tag = "v0.43.1", default-features = false, features = [
+    "enrichment-tables",
+    "transforms",
+    # build required sinks
+    "sinks-blackhole",
+    "sinks-console",
+    "sinks-prometheus",
+    "sinks-file",
+    "sinks-http",
+    "sinks-opentelemetry",
+    "sinks-vector",
+    "secrets",
+    "sources-amqp",
+    "sources-aws_kinesis_firehose",
+    "sources-aws_s3",
+    "sources-aws_sqs",
+    "sources-datadog_agent",
+    "sources-demo_logs",
+    "sources-docker_logs",
+    "sources-exec",
+    "sources-file",
+    "sources-fluent",
+    "sources-gcp_pubsub",
+    "sources-heroku_logs",
+    "sources-http_server",
+    "sources-http_client",
+    "sources-internal_logs",
+    "sources-journald",
+    "sources-kubernetes_logs",
+    "sources-logstash",
+    "sources-nats",
+    "sources-opentelemetry",
+    "sources-pulsar",
+    "sources-file_descriptor",
+    "sources-redis",
+    "sources-socket",
+    "sources-splunk_hec",
+    "sources-stdin",
+    "sources-syslog",
+    "sources-vector",
+    "sources-metrics",
+] }

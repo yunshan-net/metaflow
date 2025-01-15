@@ -1,10 +1,15 @@
 # TODO : aarch64 env rust-build update
-FROM ghcr.io/deepflowio/rust-build:1.30-arm64 as builder
+FROM ghcr.io/deepflowio/rust-build:1.31-arm64 as builder
 COPY .  /deepflow/
+RUN yum --disablerepo=forensics,forensics-splunk -y install devtoolset-10-gcc devtoolset-10-gdb devtoolset-10-gcc-c++ devtoolset-10-binutils
+WORKDIR /root
+RUN wget https://musl.cc/aarch64-linux-musl-native.tgz
+RUN tar -zxf aarch64-linux-musl-native.tgz -C /opt
+ENV PATH=/opt/aarch64-linux-musl-native/bin:$PATH
 WORKDIR /deepflow/agent
 ARG GITHUB_REF_NAME
-RUN cargo build --release --target=aarch64-unknown-linux-musl && \
-    cargo build --release --bin deepflow-agent-ctl --target=aarch64-unknown-linux-musl && \
+RUN source /opt/rh/devtoolset-10/enable && PATH=/opt/aarch64-linux-musl-native/bin:$PATH cargo build --release --target=aarch64-unknown-linux-musl && \
+    PATH=/opt/aarch64-linux-musl-native/bin:$PATH cargo build --release --bin deepflow-agent-ctl --target=aarch64-unknown-linux-musl && \
     ls -alh target/aarch64-unknown-linux-musl/release
 FROM scratch
 COPY --from=builder /deepflow/agent/ /

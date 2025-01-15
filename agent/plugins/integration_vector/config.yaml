@@ -1,0 +1,62 @@
+inputs:
+  vector:
+    enabled: true
+    config:
+      sources:
+        host_metrics:
+          type: host_metrics
+          scrape_interval_secs: 15
+          # in prometheus spec, should use node_x
+          namespace: node
+          # collectors:
+          # - cgropus
+          # - cpu
+          # - disk
+          # - filesystem
+          # - load
+          # - host
+          # - memory
+          # - network
+        # prometheus_scrape did not have service discovery ability
+        cadvisor_metrics:
+          type: prometheus_scrape
+          endpoints:
+          - http://kubelet.kube-system:10250/metrics/cadvisor
+          # query:
+          #   "match[]":
+          #   - '{job="job"}'
+          #   - '{__name__=~"kube.*"}'
+          auth:
+            strategy: bearer
+            token: SECRET[secret_k8s_token.token]
+          scrape_interval_secs: 25
+          scrape_timeout_secs: 10
+          honor_labels: true
+        kubelet_metrics:
+          type: prometheus_scrape
+          endpoints:
+          - http://kubelet.kube-system:10250/metrics
+          auth:
+            strategy: bearer
+            token: SECRET[secret_k8s_token.token]
+          scrape_interval_secs: 25
+          scrape_timeout_secs: 10
+          honor_labels: true
+        kube_state_metrics:
+          type: prometheus_scrape
+          endpoints:
+          - http://opensource-kube-state-metrics:8080/metrics
+          scrape_interval_secs: 25
+          scrape_timeout_secs: 25
+          honor_labels: true
+      sinks:
+        prometheus_remote_write:
+          type: prometheus_remote_write
+          inputs:
+          - cadvisor_metrics
+          - kubelet_metrics
+          - kube_state_metrics
+          - host_metrics
+          endpoint: http://127.0.0.1:38086/api/v1/prometheus
+          healthcheck:
+            enabled: false
