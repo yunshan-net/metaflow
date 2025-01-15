@@ -37,7 +37,7 @@ import (
 	"github.com/deepflowio/deepflow/server/controller/config"
 	"github.com/deepflowio/deepflow/server/controller/db/clickhouse"
 	"github.com/deepflowio/deepflow/server/controller/db/metadb"
-	mysqlCommon "github.com/deepflowio/deepflow/server/controller/db/metadb/common"
+	metaDBCommon "github.com/deepflowio/deepflow/server/controller/db/metadb/common"
 	"github.com/deepflowio/deepflow/server/libs/logger"
 )
 
@@ -148,20 +148,10 @@ func (c *Dictionary) Update() {
 }
 
 func (c *Dictionary) update(clickHouseCfg *clickhouse.ClickHouseConfig) {
-	var mysqlDatabaseName string
-	var ckDatabaseName string
 	// 在本区域所有数据节点更新字典
 	// Update the dictionary at all data nodes in the region
-	var replicaSQL string
-	var mysqlPort uint32
-	if c.cfg.MySqlCfg.ProxyHost != "" {
-		replicaSQL = fmt.Sprintf(SQL_REPLICA, c.cfg.MySqlCfg.ProxyHost)
-		mysqlPort = c.cfg.MySqlCfg.ProxyPort
-	} else {
-		replicaSQL = fmt.Sprintf(SQL_REPLICA, c.cfg.MySqlCfg.Host)
-		mysqlPort = c.cfg.MySqlCfg.Port
-	}
-
+	source := metaDBCommon.GetClickhouseSource(c.cfg.MetadbCfg)
+	ckDatabaseName := c.cfg.ClickHouseCfg.Database
 	ckDb, err := clickhouse.Connect(*clickHouseCfg)
 	if err != nil {
 		log.Error(err)
@@ -238,12 +228,9 @@ func (c *Dictionary) update(clickHouseCfg *clickhouse.ClickHouseConfig) {
 	}
 
 	for _, orgID := range orgIDs {
-		if orgID == mysqlCommon.DEFAULT_ORG_ID {
-			mysqlDatabaseName = c.cfg.MySqlCfg.Database
-			ckDatabaseName = c.cfg.ClickHouseCfg.Database
-		} else {
-			mysqlDatabaseName = "`" + fmt.Sprintf(mysqlCommon.DATABASE_PREFIX_ALIGNMENT, orgID) + "_" + c.cfg.MySqlCfg.Database + "`"
-			ckDatabaseName = "`" + fmt.Sprintf(mysqlCommon.DATABASE_PREFIX_ALIGNMENT, orgID) + "_" + c.cfg.ClickHouseCfg.Database + "`"
+		if orgID != metaDBCommon.DEFAULT_ORG_ID {
+			source.Database = "`" + fmt.Sprintf(metaDBCommon.DATABASE_PREFIX_ALIGNMENT, orgID) + "_" + source.Database + "`"
+			ckDatabaseName = "`" + fmt.Sprintf(metaDBCommon.DATABASE_PREFIX_ALIGNMENT, orgID) + "_" + ckDatabaseName + "`"
 		}
 		var databases []string
 		// 检查并创建数据库
@@ -313,7 +300,7 @@ func (c *Dictionary) update(clickHouseCfg *clickhouse.ClickHouseConfig) {
 			dictName := dict.(string)
 			chTable := "ch_" + strings.TrimSuffix(dictName, "_map")
 			createSQL := CREATE_SQL_MAP[dictName]
-			createSQL = fmt.Sprintf(createSQL, ckDatabaseName, dictName, mysqlPort, c.cfg.MySqlCfg.UserName, c.cfg.MySqlCfg.UserPassword, replicaSQL, mysqlDatabaseName, chTable, chTable, c.cfg.TagRecorderCfg.DictionaryRefreshInterval)
+			createSQL = fmt.Sprintf(createSQL, ckDatabaseName, dictName, source.Name, source.Host, source.Port, source.UserName, source.UserPassword, source.ReplicaSQL, source.Database, chTable, chTable, c.cfg.TagRecorderCfg.DictionaryRefreshInterval)
 			log.Infof("create dictionary %s", dictName, logger.NewORGPrefix(orgID))
 			log.Info(createSQL, logger.NewORGPrefix(orgID))
 			_, err = ckDb.Exec(createSQL)
@@ -344,9 +331,9 @@ func (c *Dictionary) update(clickHouseCfg *clickhouse.ClickHouseConfig) {
 				break
 			}
 			createSQL := CREATE_SQL_MAP[dictName]
-			createSQL = fmt.Sprintf(createSQL, ckDatabaseName, dictName, mysqlPort, c.cfg.MySqlCfg.UserName, c.cfg.MySqlCfg.UserPassword, replicaSQL, mysqlDatabaseName, chTable, chTable, c.cfg.TagRecorderCfg.DictionaryRefreshInterval)
-			// In the new version of CK (version after 23.8), when ‘SHOW CREATE DICTIONARY’ does not display plain text password information, the password is fixedly displayed as ‘[HIDDEN]’, and password comparison needs to be repair.
-			checkDictSQL := strings.Replace(dictSQL[0], "[HIDDEN]", c.cfg.MySqlCfg.UserPassword, 1)
+			createSQL = fmt.Sprintf(createSQL, ckDatabaseName, dictName, source.Name, source.Host, source.Port, source.UserName, source.UserPassword, source.ReplicaSQL, source.Database, chTable, chTable, c.cfg.TagRecorderCfg.DictionaryRefreshInterval)
+			// In the new version of CK (version after 23.8), when ‘SHOW CREATE DICTIONARY’ does not display plain text source.UserPassword information, the source.UserPassword is fixedly displayed as ‘[HIDDEN]’, and source.UserPassword comparison needs to be repair.
+			checkDictSQL := strings.Replace(dictSQL[0], "[HIDDEN]", source.UserPassword, 1)
 			if createSQL == checkDictSQL {
 				continue
 			}
