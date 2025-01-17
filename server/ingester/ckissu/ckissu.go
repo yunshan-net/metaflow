@@ -33,6 +33,7 @@ import (
 	"github.com/deepflowio/deepflow/server/ingester/datasource"
 	"github.com/deepflowio/deepflow/server/libs/ckdb"
 	flow_metrics "github.com/deepflowio/deepflow/server/libs/flow-metrics"
+	"github.com/deepflowio/deepflow/server/libs/nativetag"
 )
 
 var log = logging.MustGetLogger("issu")
@@ -1351,6 +1352,7 @@ func (i *Issu) Start() error {
 		}
 	}
 
+	nativeTags := nativetag.GetAllNativeTags()
 	var wg sync.WaitGroup
 	for index, prefixes := range orgIDPrefixs {
 		orgCount := len(prefixes)
@@ -1389,7 +1391,17 @@ func (i *Issu) Start() error {
 						log.Error(err)
 						errCount++
 					}
+					orgId := parseOrgId(orgIDPrefix + "event")
+					for i, nativeTag := range nativeTags[orgId] {
+						if nativeTag == nil {
+							continue
+						}
+						if e := nativetag.CKAddNativeTag(connect, orgId, nativetag.NativeTagTable(i), nativeTag); e != nil {
+							log.Error(err)
+						}
+					}
 				}
+
 				log.Infof("end ckissu %+v", orgPrefixs)
 			}(prefixes[minIndex:maxIndex])
 		}

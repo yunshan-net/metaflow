@@ -26,6 +26,7 @@ import (
 	"github.com/deepflowio/deepflow/server/ingester/prometheus/prometheus"
 	"github.com/deepflowio/deepflow/server/libs/ckdb"
 	"github.com/deepflowio/deepflow/server/libs/debug"
+	"github.com/deepflowio/deepflow/server/libs/nativetag"
 )
 
 var CleanDatabaseList = []string{
@@ -92,4 +93,24 @@ func (o *OrgHandler) dropOrgCaches(orgId uint16) {
 		return
 	}
 	o.promHander.DropOrg(orgId)
+}
+
+func (o *OrgHandler) UpdateNativeTag(orgId uint16, table nativetag.NativeTagTable, nativeTag *nativetag.NativeTag) error {
+	if nativeTag == nil {
+		return nil
+	}
+
+	conns, err := common.NewCKConnections(*o.cfg.CKDB.ActualAddrs, o.cfg.CKDBAuth.Username, o.cfg.CKDBAuth.Password)
+	if err != nil {
+		return err
+	}
+	defer conns.Close()
+
+	for _, conn := range conns {
+		err := nativetag.CKAddNativeTag(conn, orgId, table, nativeTag)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
