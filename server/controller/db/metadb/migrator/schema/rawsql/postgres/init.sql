@@ -2774,3 +2774,17 @@ CREATE TABLE IF NOT EXISTS ch_user (
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 TRUNCATE TABLE ch_user;
+
+CREATE TABLE IF NOT EXISTS native_field (
+    id                 SERIAL PRIMARY KEY,
+    database           VARCHAR(64) NOT NULL,
+    table_name         VARCHAR(64) NOT NULL,
+    name               VARCHAR(64) NOT NULL,
+    field_name         VARCHAR(64) NOT NULL,
+    field_value_type   VARCHAR(64) NOT NULL,
+    lcuuid             CHAR(36) NOT NULL,
+    status             INTEGER DEFAULT 0, -- 0: normal 1: abnormal
+    created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+TRUNCATE TABLE native_field;
